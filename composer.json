@@ -3,7 +3,7 @@
     "description": "常用的支付sdk集成",
     "license": "MIT",
     "keywords": ["xg-pay"],
-    "version": "1.0.0",
+    "version": "1.0.1",
     "authors": [
         {
             "name": "xinge",
