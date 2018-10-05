@@ -1,0 +1,22 @@
+{
+    "name": "xinrui5577/xg-pay",
+    "description": "常用的支付sdk集成",
+    "license": "MIT",
+    "keywords": ["xg-pay"],
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "xinge",
+            "email": "xinrui5577@sina.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "xinrui5577\\xg-pay": "src/"
+        }
+    }
+}
