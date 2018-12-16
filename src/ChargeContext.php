@@ -20,10 +20,10 @@ use Payment\Charge\Wx\WxBarCharge;
 use Payment\Charge\Wx\WxPubCharge;
 use Payment\Charge\Wx\WxQrCharge;
 use Payment\Charge\Wx\WxWapCharge;
-use Payment\Charge\Ydt\YdtQrCharge;
 use Payment\Common\BaseStrategy;
 use Payment\Common\PayException;
 use Payment\Charge\Pxpay\PxpayCharge;
+use Payment\Charge\Ceb\CebbuyCharge;
 /**
  * Class ChargeContext
  *
@@ -54,6 +54,21 @@ class ChargeContext
         // 初始化时，可能抛出异常，再次统一再抛出给客户端进行处理
         try {
             switch ($channel) {
+                case Config::ZY_TongLian:
+                    $this->channel = new CebbuyCharge($config);
+                    break;
+                case Config::ZY_YouxinWx:
+                    $this->channel = new Charge\Aft\AftChargeWx($config);
+                    break;
+                case Config::ZY_Youxin:
+                    $this->channel = new Charge\Aft\AftCharge($config);
+                    break;
+                case Config::ZY_Kadiya:
+                    $this->channel = new Charge\Kadiya\KadiyaCharge($config);
+                    break;
+                case Config::ZY_HNY:
+                    $this->channel = new Charge\Hnyl8\Hnyl8Charge($config);
+                    break;
                 case Config::ZY_PXPAY_ALI:
                     $this->channel = new PxpayCharge($config,'ALIPAY');
                     break;
@@ -92,10 +107,6 @@ class ChargeContext
                 case Config::WX_CHANNEL_BAR:
                     $this->channel = new WxBarCharge($config);
                     break;
-                case Config::YDT_CHARGE_QR:
-                    $this->channel = new YdtQrCharge($config);
-                    break;
-
                 case Config::CMB_CHANNEL_WAP:
                 case Config::CMB_CHANNEL_APP:
                     $this->channel = new CmbCharge($config);

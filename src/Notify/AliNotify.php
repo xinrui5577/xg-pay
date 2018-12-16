@@ -74,6 +74,7 @@ class AliNotify extends NotifyStrategy
         $status = $this->getTradeStatus($data['trade_status']);
         if ($status !== Config::TRADE_STATUS_SUCC) {
             // 如果不是交易成功状态，直接返回错误，
+            \think\Log::write('$status:'.$status.'!='.Config::TRADE_STATUS_SUCC);
             return false;
         }
 
@@ -212,7 +213,6 @@ class AliNotify extends NotifyStrategy
             return $rsa->rsaVerify($preStr, $sign);
         } elseif ($signType === 'RSA2') {
             $rsa = new Rsa2Encrypt($this->config->rsaAliPubKey);
-
             return $rsa->rsaVerify($preStr, $sign);
         } else {
             return false;

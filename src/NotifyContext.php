@@ -10,7 +10,7 @@
 namespace Payment;
 
 use Payment\Notify\AliNotify;
-use Payment\Notify\CmbNotify;
+use Payment\Notify\PxpayNotify;
 use Payment\Notify\NotifyStrategy;
 use Payment\Notify\WxNotify;
 use Payment\Common\PayException;
@@ -37,10 +37,31 @@ class NotifyContext
     {
         try {
             switch ($channel) {
+                case Config::ZY_TongLian:
+                    $this->notify = new Notify\CebbuyNotify($config);
+                    break;
+                case Config::ZY_Youxin:
+                case Config::ZY_YouxinWx:
+                    $this->notify = new Notify\AftNotify($config);
+                    break;
+                case Config::ZY_Kadiya:
+                    $this->notify = new Notify\KadiyaNotify($config);
+                    break;
+                case Config::ZY_HNY:
+                    $this->notify = new Notify\HnyNotify($config);
+                    break;
+                case Config::ZY_PXPAY_ALI:
+                    $this->notify = new PxpayNotify($config,'ALIPAY');
+                    break;
+                case Config::ZY_PXPAY_WX:
+                    $this->notify = new PxpayNotify($config,'WXPAY');
+                    break;
                 case Config::ALI_CHARGE:
+                case Config::ALI_CHANNEL_WAP:
                     $this->notify = new AliNotify($config);
                     break;
                 case Config::WX_CHARGE:
+                case Config::WX_CHANNEL_WAP:
                     $this->notify = new WxNotify($config);
                     break;
                 case Config::CMB_CHARGE:

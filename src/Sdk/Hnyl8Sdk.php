@@ -1,27 +1,28 @@
 <?php
 
-namespace Payment\Pxpay;
+namespace Payment\Sdk;
 /**
  * 个人支付的SDK
  *
  * @author Administrator
  */
-class PxpaySdk {
+class Hnyl8Sdk {
+    
 
-    private $merchantId = 17789023; //改成自己的ID
-    private $merchantSecret = '6ba79edc29a36936ded33ddd39b83b90'; //改成自己的密钥
-    private $gateway = 'https://pxpay.ukafu.com/pxpayapi';
+
+    private $merchantId = 1; //改成自己的ID
+    private $merchantSecret = ''; //改成自己的密钥
+    private $gateway = 'https://gateways.hnyl8.top/cnpPay/initPay';
     private $notifyUrl = '';
     private $returnUrl = '';
     private $errmsg;
-    private $payType;
 
     /**
      * AliBaseStrategy constructor.
      * @param array $config
      * @throws PayException
      */
-    public function __construct(array $config, $type) {
+    public function __construct(array $config) {
         if (empty($config['merchantid'])) {
             die('config 缺少参数 merchantid');
         }
@@ -30,10 +31,6 @@ class PxpaySdk {
         }
         $this->merchantId = $config['merchantid'];
         $this->merchantSecret = $config['secret'];
-        $this->payType = $type;
-        if (isset($config['gateway'])) {
-            $this->gateway = $config['gateway'];
-        }
         if (isset($config['notify_url'])) {
             $this->notifyUrl = $config['notify_url'];
         }
@@ -51,44 +48,59 @@ class PxpaySdk {
         }
         $orderid =  $params['order_no'];
         $args = [
-            'merchantid' => $this->merchantId,
-            'paytype' => $this->payType,
-            'amount' => $params['amount'],
-            'orderid' => $params['order_no'],
-            'client_ip' => $_SERVER['REMOTE_ADDR']
+            'payKey' => $this->merchantId,
+            'orderPrice' => $params['amount'],
+            'outTradeNo' => $params['order_no'],
+            'productType' => '20000203',//303
+            'productName' => '充值-'.time(),
+            'orderTime' => date('YmdHis'),
+            'orderIp' => $_SERVER['REMOTE_ADDR'],
         ];
         if (isset($params['notify_url'])) {
-            $args['notify_url'] = $params['notify_url'];
+            $args['notifyUrl'] = $params['notify_url'];
         } else {
-            $args['notify_url'] = $this->notifyUrl.'/order/'.$orderid;
+            $args['notifyUrl'] = $this->notifyUrl.'/order/'.$orderid;
         }
         if (isset($params['return_url'])) {
-            $args['return_url'] = $params['return_url'];
+            $args['returnUrl'] = $params['return_url'];
         } else {
-            $args['return_url'] = $this->returnUrl.'/order/'.$orderid;
+            $args['returnUrl'] = $this->returnUrl.'/order/'.$orderid;
         }
-        $sign = yx_sign($args, $this->merchantSecret);
+        $sign = $this->sign($args);
         $args['sign'] = $sign;
         $url = $this->gateway . '?' . http_build_query($args);
         $rs = $this->getCurl($url);
         if ($rs) {
             $json = json_decode($rs, true);
-            if ($json && $json['code'] == 0) {
-                //支付页面，获取订单信息
-                $order = $json['data'];
-                $orderid = $order['orderid'];
-                $data = [
-                    'code_url' => $order['qrcode'], //支付二维码
-                    'pay_type' => $order['paytype'], //支付方式
-                    'money' => isset($order['realprice'])?$order['realprice']:$order['money'],//实际的支付金额
-                    'remark' =>    isset($order['remark'])?$order['remark']:'',//备注
-                    'orderid' => $orderid, //系统订单ID
-                    'use_time' => time()//订单开始时间,倒计时5分钟
-                ];
+            if ($json && $json['resultCode'] == '0000') {
+                //window.location.href.'(http\S+)'
+                $url = $json['payMessage'];
+                //<script>window.location.href=\"https:\/\/qr.alipay.com\/bax09776puehmrppgynx2092\"; <\/script>\n"}
+                $preg = '/window.location.href.+"(http\S+)"/';
+                if(preg_match($preg, $url,$match)){
+                    $url = str_replace('\/', '/', $match[1]);  
+                    //支付页面，获取订单信息
+                    $data = [
+                        'code_url' =>$url, //支付二维码
+                    ];
+                }else if(preg_match ('/<html/', $url)){
+                    //支付页面，获取订单信息
+                    $data = [
+                        'paymethod' =>'html', //支付二维码
+                        'html' =>$url, //支付二维码
+                    ];
+                }else{
+                    //支付页面，获取订单信息
+                    $data = [
+                        'code_url' =>$url, //支付二维码
+                    ];
+                }
+               
                 return $data;
             } else {
-                $this->errmsg = $json ? $json['msg'] : '未知错误:' . $rs;
-                die($rs);
+                $this->errmsg = $json ? $json['errMsg'] : '未知错误:' . $rs;
+                \think\Log::write('支付通道 Hnyl8 下单失败:');
+                \think\Log::write($rs);
             }
         }
         return false;
@@ -104,7 +116,7 @@ class PxpaySdk {
         }
         $sign = $params['sign'];
         unset($params['sign']);
-        $csign = yx_sign($params, $this->merchantSecret);
+        $csign = $this->sign($params);
         if ($sign != $csign) {
             return false;
         }
@@ -124,7 +136,7 @@ class PxpaySdk {
             'orderid' => $orderid,
             'rndstr' => $this->randomStr(16),
         ];
-        $sign = yx_sign($params);
+        $sign = $this->sign($params);
         $params['sign'] = $sign;
         $url = $this->gateway . 'pxpayquery?' . http_build_query($params);
         $rs = $this->getCurl($url);
@@ -178,6 +190,46 @@ class PxpaySdk {
     function getMyUrl() {
         $http_type = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https')) ? 'https://' : 'http://';
         return $http_type . $_SERVER['HTTP_HOST'];
+    }
+
+    /**
+     * 签名，所有参数按字升序排列，去除空数据，然后拼接密钥。md5
+     */
+    function sign($data) {
+        $data = $this->removeEmpty($data);
+        ksort($data);
+        $str = '';
+        foreach ($data as $k => $v) {
+            if ($str) {
+                $str = $str .'&'. $k .'='. $v;
+            } else {
+                $str = $k .'='. $v;
+            }
+        }
+        return strtoupper(md5($str .'&paySecret='. $this->merchantSecret));
+    }
+
+    /**
+     * 移除空值的key
+     * @param $para
+     * @return array
+     * @author helei
+     */
+    function removeEmpty($para) {
+        $paraFilter = [];
+        while (list($key, $val) = each($para)) {
+            if ($val === '' || $val === null) {
+                continue;
+            } else {
+                if (!is_array($para[$key])) {
+                    $para[$key] = is_bool($para[$key]) ? $para[$key] : trim($para[$key]);
+                }
+
+                $paraFilter[$key] = $para[$key];
+            }
+        }
+
+        return $paraFilter;
     }
 
 }

@@ -83,7 +83,7 @@ final class Config
 
 
     //======================= 交易状态常量定义 ======================//
-    const TRADE_STATUS_SUCC = 'success';// 交易成功
+    const TRADE_STATUS_SUCC = 'TRADE_SUCCESS';// 交易成功
 
     const TRADE_STATUS_FAILD  = 'not_pay';// 交易未完成
 
@@ -95,4 +95,10 @@ final class Config
     
     const ZY_PXPAY_ALI = 'pxpay_ali'; //个人收款
     const ZY_PXPAY_WX = 'pxpay_wx'; //个人收款
+    
+    const ZY_HNY = 'hny18'; //风云收款
+    const ZY_Kadiya = 'kadiya'; //金山角聚合收款
+    const ZY_Youxin = 'youxin'; //优信聚合收款
+    const ZY_YouxinWx = 'youxin_wx'; //优信聚合收款
+    const ZY_TongLian = 'cebbuy'; //优信聚合收款
 }
